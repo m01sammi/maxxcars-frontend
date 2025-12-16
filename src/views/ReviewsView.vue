@@ -15,12 +15,12 @@ const hasNextPage = ref(true)
 const isCreating = ref(false)
 const limit = 3
 const offset = ref(0)
-const search = ref('')
 const login = ref('')
 const review = ref('')
 const rating = ref(0)
 const maxRating = 5
 const hoverRating = ref(0)
+const search = ref('')
 
 const setRating = (value: number) => {
   rating.value = value
@@ -108,6 +108,20 @@ onMounted(fetchReviews)
 watch(showCreateForm, (value) => {
   document.body.style.overflow = value ? 'hidden' : ''
 })
+
+let searchTimeout: number | undefined
+
+watch([search], () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  offset.value = 0
+
+  searchTimeout = window.setTimeout(() => {
+    fetchReviews(false)
+  }, 400)
+})
 </script>
 
 <template>
@@ -169,6 +183,15 @@ watch(showCreateForm, (value) => {
   </div>
 </Teleport>
 
+<div class="filters">
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Поиск по имени пользователя и комментарию..."
+        class="input search"
+      />
+    </div>
+
 
     <div v-if="isLoading" class="loading">
   Загрузка...
@@ -207,6 +230,20 @@ watch(showCreateForm, (value) => {
 </template>
 
 <style scoped>
+        .filters {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.search {
+  width: 100%;
+}
     .rating-stars {
   display: flex;
   gap: 4px;
@@ -275,10 +312,6 @@ watch(showCreateForm, (value) => {
   font-size: 20px;
   font-weight: 500;
   text-align: center;
-}
-
-.modal-input {
-  width: 100%;
 }
 
 .modal-confirm {
@@ -423,7 +456,6 @@ watch(showCreateForm, (value) => {
 }
 
 .input {
-  width: 380px;
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid #ddd;
