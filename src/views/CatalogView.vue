@@ -33,34 +33,6 @@ const newCarName = ref('')
 const newCarPrice = ref<string>('')
 const isCreating = ref(false)
 
-const createCar = async () => {
-  if (!newCarName.value.trim() || newCarPrice.value === '') {
-    return
-  }
-
-  try {
-    isCreating.value = true
-
-    const payload = {
-      name: newCarName.value.trim(),
-      price: Number(newCarPrice.value),
-    }
-
-    await createNewCar(payload)
-
-    newCarName.value = ''
-    newCarPrice.value = ''
-    showCreateForm.value = false
-
-    offset.value = 0
-    await fetchCars(false)
-  } catch (error) {
-    console.error(error)
-  } finally {
-    isCreating.value = false
-  }
-}
-
 const buildQuery = () => {
   const params = new URLSearchParams()
 
@@ -154,41 +126,6 @@ watch(showCreateForm, (value) => {
   />
 
   <div class="car-container">
-    <div class="create-section">
-  <button class="create-btn" @click="showCreateForm = true">
-    Добавить авто
-  </button>
-</div>
-
-<div v-if="showCreateForm" class="modal-overlay" @click.self="showCreateForm = false">
-  <div class="modal">
-    <button class="modal-close" @click="showCreateForm = false">✕</button>
-
-    <h2 class="modal-title">Добавить автомобиль</h2>
-
-    <input
-      v-model="newCarName"
-      type="text"
-      placeholder="Название автомобиля"
-      class="input modal-input"
-    />
-
-    <input
-      v-model="newCarPrice"
-      type="number"
-      placeholder="Цена"
-      class="input modal-input"
-    />
-
-    <button
-      class="confirm-btn modal-confirm"
-      :disabled="isCreating"
-      @click="createCar"
-    >
-      {{ isCreating ? 'Создание...' : 'Подтвердить' }}
-    </button>
-  </div>
-</div>
 
 
     <div class="filters">

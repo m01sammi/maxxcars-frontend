@@ -10,8 +10,8 @@ import { RouterLink } from 'vue-router';
             <RouterLink type="button" to="/" :class="{'active': $route.path === '/'}">ГЛАВНАЯ</RouterLink>
             <RouterLink type="button" to="/catalog" :class="{'active': $route.path === '/catalog'}">КАТАЛОГ</RouterLink>
             <img alt="Vue logo" class="logo" src="../assets/logo.png" />
-            <RouterLink type="button" to="/orders" :class="{'active': $route.path === '/orders'}">ЗАКАЗЫ</RouterLink>
             <RouterLink type="button" to="/reviews" :class="{'active': $route.path === '/reviews'}">ОТЗЫВЫ</RouterLink>
+            <RouterLink type="button" to="/orders" :class="{'active': $route.path === '/orders'}">ЛИЧНЫЙ КАБИНЕТ</RouterLink>
         </div>
     </header>
 </template>

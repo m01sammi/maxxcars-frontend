@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { getAllOrders, createNewOrder, getAllCars } from '../api/requests'
+import { getAllOrders, createNewOrder, getAllCars, createNewCar } from '../api/requests'
 
 interface Car {
   id: number
@@ -19,19 +19,26 @@ const orders = ref<Order[]>([])
 const isLoading = ref(false)
 const showCreateForm = ref(false)
 const hasNextPage = ref(true)
-const isCreating = ref(false)
 const limit = 3
 const offset = ref(0)
-
+const newCarName = ref('')
+const newCarPrice = ref<string>('')
+const isCreating = ref(false)
 const name = ref('')
 const phone_number = ref('')
 const email = ref('')
 const car_id = ref<number | null>(null)
+const search = ref('')
 
 const cars = ref<Car[]>([])
 
 const buildQuery = () => {
   const params = new URLSearchParams()
+
+  if (search.value.trim()) {
+    params.append('search', search.value.trim())
+  }
+
   params.append('limit', limit.toString())
   params.append('offset', offset.value.toString())
   return params.toString()
@@ -108,48 +115,100 @@ onMounted(() => {
 watch(showCreateForm, (value) => {
   document.body.style.overflow = value ? 'hidden' : ''
 })
+
+const createCar = async () => {
+  if (!newCarName.value.trim() || newCarPrice.value === '') {
+    return
+  }
+
+  try {
+    isCreating.value = true
+
+    const payload = {
+      name: newCarName.value.trim(),
+      price: Number(newCarPrice.value),
+    }
+
+    await createNewCar(payload)
+
+    newCarName.value = ''
+    newCarPrice.value = ''
+    showCreateForm.value = false
+
+    offset.value = 0
+  } catch (error) {
+    console.error(error)
+  } finally {
+    isCreating.value = false
+  }
+}
+
+let searchTimeout: number | undefined
+
+watch([search], () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  offset.value = 0
+
+  searchTimeout = window.setTimeout(() => {
+    fetchOrders(false)
+  }, 400)
+})
 </script>
 
 <template>
-        <img
+<img
     alt="background"
     class="background"
     src="../assets/backgrounds/background-catalog.jpg"
   />
   <div class="order-container">
-    <!-- <div class="create-section">
-      <button class="create-btn" @click="showCreateForm = true">
-        Добавить заказ
-      </button>
-    </div> -->
+    <div class="create-section">
+  <button class="create-btn" @click="showCreateForm = true">
+    Добавить новое авто в каталог
+  </button>
+</div>
 
-    <Teleport to="body">
-      <div v-if="showCreateForm" class="modal-overlay" @click.self="showCreateForm = false">
-        <div class="modal">
-          <button class="modal-close" @click="showCreateForm = false">✕</button>
-          <h2 class="modal-title">Добавить заказ</h2>
+<div v-if="showCreateForm" class="modal-overlay" @click.self="showCreateForm = false">
+  <div class="modal">
+    <button class="modal-close" @click="showCreateForm = false">✕</button>
 
-          <input v-model="name" type="text" placeholder="Имя" class="input modal-input" />
-          <input v-model="phone_number" type="text" placeholder="Телефон" class="input modal-input" />
-          <input v-model="email" type="email" placeholder="Email" class="input modal-input" />
+    <h2 class="modal-title">Добавить автомобиль</h2>
 
-          <select v-model="car_id" class="input modal-input">
-            <option disabled value="">Выберите авто</option>
-            <option
-              v-for="(car, index) in cars"
-              :key="car.id"
-              :value="index + 1"
-            >
-              {{ car.name }} - {{ car.price }} ₽
-            </option>
-          </select>
+    <input
+      v-model="newCarName"
+      type="text"
+      placeholder="Название автомобиля"
+      class="input modal-input"
+    />
 
-          <button class="confirm-btn modal-confirm" :disabled="isCreating" @click="createOrder">
-            {{ isCreating ? 'Создание...' : 'Подтвердить' }}
-          </button>
-        </div>
-      </div>
-    </Teleport>
+    <input
+      v-model="newCarPrice"
+      type="number"
+      placeholder="Цена"
+      class="input modal-input"
+    />
+
+    <button
+      class="confirm-btn modal-confirm"
+      :disabled="isCreating"
+      @click="createCar"
+    >
+      {{ isCreating ? 'Создание...' : 'Подтвердить' }}
+    </button>
+  </div>
+</div>
+
+<div class="filters">
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Поиск по имени пользователя, почте, номеру телефона и названию машины..."
+        class="input search"
+      />
+    </div>
 
     <div v-if="isLoading" class="loading">Загрузка...</div>
     <div v-else-if="!orders.length" class="empty">Заказов нет</div>
@@ -177,6 +236,33 @@ watch(showCreateForm, (value) => {
 </template>
 
 <style scoped>
+
+    .filters {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.input {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #111;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.search {
+  width: 100%;
+}
+
 .background {
   top: 0;
   left: 0;
@@ -194,8 +280,9 @@ watch(showCreateForm, (value) => {
 }
 
 .create-section {
-  display: flex;
-  justify-content: center;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   margin-bottom: 32px;
 }
 
@@ -203,7 +290,7 @@ watch(showCreateForm, (value) => {
   padding: 14px 32px;
   border-radius: 999px;
   border: 1px solid #000;
-  background: linear-gradient(90deg, #000, #333);
+  background: #000;
   color: #fff;
   font-size: 14px;
   cursor: pointer;
@@ -211,8 +298,40 @@ watch(showCreateForm, (value) => {
 }
 
 .create-btn:hover {
-  background: linear-gradient(90deg, #f9a825, #ffc107);
+  background: #fff;
   color: #000;
+}
+
+.create-form {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.confirm-btn {
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 1px solid #000;
+  background: transparent;
+  color: #000;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #000;
+  color: #fff;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .orders {
@@ -348,7 +467,6 @@ watch(showCreateForm, (value) => {
 }
 
 .modal-input {
-  width: 100%;
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid #ddd;
